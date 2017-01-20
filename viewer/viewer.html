@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Accessibility example</title>
+
+<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.6.0/ol.css" type="text/css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.6.0/ol.js"></script>
+
+
+
+<style>
+a.skiplink {
+  position: absolute;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 0;
+  border: 0;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+}
+a.skiplink:focus {
+  clip: auto;
+  height: auto;
+  width: auto;
+  background-color: #fff;
+  padding: 0.3em;
+}
+
+</style>
+</head>
+<body>
+<div class="container-fluid">
+
+<div class="row-fluid">
+  <div class="span12">
+    <a class="skiplink" href="#map">Go to map</a>
+    <div id="map" class="map" tabindex="0"></div>
+    <button id="zoom-out">Zoom out</button>
+    <button id="zoom-in">Zoom in</button>
+  </div>
+</div>
+
+</div>
+<script>
+//ADD WFS LAYER
+
+// format used to parse WFS GetFeature responses
+var geojsonFormat = new ol.format.GeoJSON();
+
+var vectorSource = new ol.source.Vector({
+  loader: function(extent, resolution, projection) {
+    var url = 'http://bolegweb.geof.unizg.hr/geoserver/wfs?service=WFS&' +
+        'version=1.1.0&request=GetFeature&typename=US:vzdelavanie&' +
+        'outputFormat=text/javascript&format_options=callback:loadFeatures' +
+        '&srsname=EPSG:3857&bbox=' + extent.join(',') + ',EPSG:3857';
+    // use jsonp: false to prevent jQuery from adding the "callback"
+    // parameter to the URL
+    $.ajax({url: url, dataType: 'jsonp', jsonp: false});
+  },
+  strategy: ol.loadingstrategy.tile(ol.tilegrid.createXYZ({
+    maxZoom: 19
+  }))
+});
+
+
+/**
+ * JSONP WFS callback function.
+ * @param {Object} response The response object.
+ */
+window.loadFeatures = function(response) {
+  vectorSource.addFeatures(geojsonFormat.readFeatures(response));
+};
+
+var vector = new ol.layer.Vector({
+  source: vectorSource,
+  style: new ol.style.Style({
+    stroke: new ol.style.Stroke({
+      color: 'rgba(0, 0, 255, 1.0)',
+      width: 2
+    })
+  })
+});
+
+
+
+
+var map = new ol.Map({
+  layers: [
+    new ol.layer.Tile({
+      source: new ol.source.OSM()
+    })
+  ],
+  target: 'map',
+  controls: ol.control.defaults({
+    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+      collapsible: false
+    })
+  }),
+  view: new ol.View({
+    center: [48, 17],
+    zoom: 2
+  })
+});
+
+document.getElementById('zoom-out').onclick = function() {
+  var view = map.getView();
+  var zoom = view.getZoom();
+  view.setZoom(zoom - 1);
+};
+
+document.getElementById('zoom-in').onclick = function() {
+  var view = map.getView();
+  var zoom = view.getZoom();
+  view.setZoom(zoom + 1);
+};
+
+
+
+
+
+</script>
+</body>
+</html>
